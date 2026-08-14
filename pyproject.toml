@@ -1,0 +1,15 @@
+[project]
+name = "devlens-cli"
+version = "0.1.0"
+description = "Standalone terminal command for DevLens actions"
+requires-python = ">=3.8"
+
+[project.scripts]
+devlens = "devlens_cli.cli:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["devlens_cli*"]
