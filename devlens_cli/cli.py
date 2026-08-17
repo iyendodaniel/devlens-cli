@@ -129,10 +129,55 @@ def run_build_frontend(config):
     print("Done.")
 
 
+def resolve_backend_python(backend_path):
+    """Prefer the backend's own venv python if one exists, so migrations
+    run with the project's actual dependencies instead of whatever
+    `python` resolves to globally."""
+    if platform.system() == "Windows":
+        candidate = os.path.join(backend_path, "venv", "Scripts", "python.exe")
+    else:
+        candidate = os.path.join(backend_path, "venv", "bin", "python")
+
+    if os.path.isfile(candidate):
+        return candidate
+
+    return "python"
+
+
+def run_migrations(config):
+    backend_path = ensure_build_destination(config)
+
+    manage_py = os.path.join(backend_path, "manage.py")
+    if not os.path.isfile(manage_py):
+        print(f"No manage.py found at {manage_py}")
+        print("Expected the backend folder to be the Django project root.")
+        sys.exit(1)
+
+    python_cmd = resolve_backend_python(backend_path)
+    print(f"Running `{python_cmd} manage.py migrate` in {backend_path} ...")
+
+    result = subprocess.run(
+        [python_cmd, "manage.py", "migrate"],
+        cwd=backend_path,
+        capture_output=True,
+        text=True,
+    )
+
+    print(result.stdout)
+    if result.returncode != 0:
+        print("Migration failed:")
+        print(result.stderr)
+        sys.exit(1)
+
+    print("Migrations applied.")
+    print("Done.")
+
+
 # Add more actions here later the same way - key is the --run value,
 # value is a function that takes the config dict.
 ACTIONS = {
     "frontend": run_build_frontend,
+    "migrate": run_migrations,
 }
 
 
