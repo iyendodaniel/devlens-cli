@@ -6,8 +6,8 @@ window won't pop up, and for anyone who just prefers the terminal.
 
 ## What it does
 
-Right now it supports one action: building your frontend and copying the
-`dist/` output into your backend folder.
+Right now it supports two actions: building your frontend and copying the
+`dist/` output into your backend folder, and running Django migrations from the backend venv.
 
 ```
 devlens --run frontend

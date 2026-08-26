@@ -1,0 +1,3 @@
+devlens --run frontend
+
+devlens --run migrate
