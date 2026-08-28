@@ -1,3 +1,5 @@
+This command builds the frontend and then copies the build output to the backend dir where the frontend is served from. 
 devlens --run frontend
 
+This command runs both python run migrations and migrate after one another in one command.
 devlens --run migrate
