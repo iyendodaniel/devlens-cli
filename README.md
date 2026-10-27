@@ -7,7 +7,7 @@ window won't pop up, and for anyone who just prefers the terminal.
 ## What it does
 
 Right now it supports two actions: building your frontend and copying the
-`dist/` output into your backend folder, and running Django migrations from the backend venv.
+`dist/` output into your backend folder, and running Django `makemigrations` + `migrate` from the backend venv.
 
 ```
 devlens --run frontend
@@ -17,6 +17,7 @@ devlens --run frontend
   asking for your frontend folder, then another for your backend
   (destination) folder. It builds, copies, and saves both paths into a
   `.devlens.json` file in that project's root.
+- Any existing `dist/` in the destination is deleted before the fresh build is copied in, so old hashed files don't accumulate.
 - **Every run after that:** no popups - it reads `.devlens.json` and just
   builds + copies straight through.
 
@@ -37,6 +38,17 @@ runs directly from this source folder - no reinstall needed after editing
 
 Open a new terminal window/tab after installing so it picks up the command.
 
+## Migrations
+
+```
+devlens --run migrate
+```
+
+Runs `manage.py makemigrations` then `manage.py migrate` using the backend's
+`venv` if it has one. The first time, a folder picker asks for your Django
+backend folder (the one with `manage.py`) and saves it as `backend_path`.
+This is separate from the frontend build destination.
+
 ## Usage
 
 `cd` into any project folder and run:
@@ -52,7 +64,8 @@ Created automatically on first run, per project. It looks like:
 ```json
 {
   "frontend_path": "C:\\path\\to\\frontend",
-  "build_destination_path": "C:\\path\\to\\backend"
+  "build_destination_path": "C:\\path\\to\\frontend_build",
+  "backend_path": "C:\\path\\to\\django_backend"
 }
 ```
 

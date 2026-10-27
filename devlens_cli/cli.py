@@ -91,8 +91,26 @@ def ensure_build_destination(config):
     return chosen
 
 
+def ensure_backend_path(config):
+    """Django project root (the folder with manage.py). Saved separately from
+    the frontend build destination, so `migrate` has its own remembered path."""
+    saved = config.get("backend_path")
+    if saved and os.path.isdir(saved):
+        return saved
+
+    print("First time running migrations - pick your Django backend folder (the one with manage.py)...")
+    chosen = pick_folder("Select your Django backend folder")
+    if not chosen:
+        print("No folder selected. Aborting.")
+        sys.exit(1)
+
+    config["backend_path"] = chosen
+    save_config(config)
+    return chosen
+
+
 # ---------------------------------------------------------------------------
-# The actual action: build frontend, copy dist/ into backend folder
+# The actual action: build frontend, replace backend dist/ with the fresh build
 # ---------------------------------------------------------------------------
 
 def run_build_frontend(config):
@@ -124,7 +142,15 @@ def run_build_frontend(config):
     destination = ensure_build_destination(config)
     target_path = os.path.join(destination, "dist")
 
-    shutil.copytree(dist_path, target_path, dirs_exist_ok=True)
+    # Clear out the old dist/ first so stale files from previous builds
+    # (e.g. old hashed AdminJobs-*.js copies) don't pile up or get served.
+    if os.path.islink(target_path):
+        os.unlink(target_path)
+    elif os.path.isdir(target_path):
+        print(f"Removing old {target_path} ...")
+        shutil.rmtree(target_path)
+
+    shutil.copytree(dist_path, target_path)
     print(f"Copied dist/ -> {target_path}")
     print("Done.")
 
@@ -144,20 +170,10 @@ def resolve_backend_python(backend_path):
     return "python"
 
 
-def run_migrations(config):
-    backend_path = ensure_build_destination(config)
-
-    manage_py = os.path.join(backend_path, "manage.py")
-    if not os.path.isfile(manage_py):
-        print(f"No manage.py found at {manage_py}")
-        print("Expected the backend folder to be the Django project root.")
-        sys.exit(1)
-
-    python_cmd = resolve_backend_python(backend_path)
-    print(f"Running `{python_cmd} manage.py migrate` in {backend_path} ...")
-
+def run_django_command(python_cmd, backend_path, subcommand):
+    print(f"Running `{python_cmd} manage.py {subcommand}` in {backend_path} ...")
     result = subprocess.run(
-        [python_cmd, "manage.py", "migrate"],
+        [python_cmd, "manage.py", subcommand],
         cwd=backend_path,
         capture_output=True,
         text=True,
@@ -165,11 +181,27 @@ def run_migrations(config):
 
     print(result.stdout)
     if result.returncode != 0:
-        print("Migration failed:")
+        print(f"`manage.py {subcommand}` failed:")
         print(result.stderr)
         sys.exit(1)
 
-    print("Migrations applied.")
+
+def run_migrations(config):
+    backend_path = ensure_backend_path(config)
+
+    manage_py = os.path.join(backend_path, "manage.py")
+    if not os.path.isfile(manage_py):
+        print(f"No manage.py found at {manage_py}")
+        print("Expected the backend folder to be the Django project root.")
+        print(f"Delete the backend_path entry in {CONFIG_FILENAME} to pick it again.")
+        sys.exit(1)
+
+    python_cmd = resolve_backend_python(backend_path)
+
+    run_django_command(python_cmd, backend_path, "makemigrations")
+    run_django_command(python_cmd, backend_path, "migrate")
+
+    print("Migrations created and applied.")
     print("Done.")
 
 

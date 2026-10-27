@@ -1,5 +1,5 @@
-This command builds the frontend and then copies the build output to the backend dir where the frontend is served from. 
+This command builds the frontend, deletes the old dist/ folder in the backend dir, then copies the fresh build there (so no stale files pile up).
 devlens --run frontend
 
-This command runs both python run migrations and migrate after one another in one command.
+This command runs `manage.py makemigrations` and then `manage.py migrate` in your Django backend folder. The first time, it asks for that folder and saves it as backend_path in .devlens.json.
 devlens --run migrate
